@@ -8,6 +8,6 @@ const App = () => {
       <AlterStack/>
     </div>
   )
-}
+};
 
 export default App;
