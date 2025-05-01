@@ -69,7 +69,7 @@ const Homepage = () => {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className="min-h-screen bg-gradient-to-br audiowide-regular from-gray-950 to-gray-900 text-white p-4 space-y-6"
     >
-      <div className="flex items-center gap-x-2 sm:gap-x-4 mb-12 sm:ml-6 p-4">
+      <div className="flex items-center gap-x-2 sm:gap-x-4 sm:mb-12 sm:ml-6 p-4">
             <img src="/Ds.png" alt="LOGO" className="block w-auto h-10 sm:h-15" />
             <h1 className="text-3xl sm:text-6xl font-bold tracking-wide">
               DSA GAMES

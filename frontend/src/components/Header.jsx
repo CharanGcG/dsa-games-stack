@@ -15,28 +15,37 @@ const RulesModal = ({ onClose }) => (
     >
       <h2 className="text-3xl font-semibold mb-6 text-center">Game Rules</h2>
       <ul className="list-none list-inside text-sm sm:text-base space-y-4 mt-4 mb-6">
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">1.</span> Push values from the pool onto the stack.
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">2.</span> Stack values alternate in sign, starting with a positive number.
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">3.</span> Pop elements if needed, but choose wisely!
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">4.</span> Match the current sum to the target sum to win.
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">5.</span> At least 5 elements must be present in the stack to win.
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">6.</span> You can change difficulty before starting the game.
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-yellow-400">7.</span> Lesser the pushes and pops, Higher the score.
-        </li>
-      </ul>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span>Starting the Game: Select difficulty, Click on the Start button, Timer starts</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span><strong>Goal:</strong> Build a stack of numbers that adds up exactly to the <strong>target sum</strong> before the time runs out.</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span><strong>What is a stack?</strong> Think of it like a vertical pile — you can only add or remove from the top.</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span><strong>Push:</strong> Add a number to the top of the stack. <strong>Pop:</strong> Remove the top number.</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span>When pushing, numbers will alternate in sign: <strong>+ - + -</strong>, starting with a <strong>positive</strong>.</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span>You must have at least <strong>5 numbers</strong> in your stack to submit it.</span>
+  </li>
+  <li className="flex items-start gap-2">
+    <span className="text-yellow-400">🔹</span> 
+    <span><strong>Tip:</strong> Use fewer pushes and pops for a better score!</span>
+  </li>
+  
+</ul>
+
       
       <button
         type="button"
@@ -79,7 +88,7 @@ const Header = () => {
             </Link>
             <button
               type="button"
-              className="border sm:border-none sm:bg-violet-800 sm:hover:bg-violet-950 cursor-pointer text-white font-semibold py-1 px-2 sm:py-3 sm:px-6 rounded-lg transition text-center"
+              className="border sm:border-none sm:bg-violet-800 sm:hover:bg-violet-950 cursor-pointer text-white py-1 px-2 sm:py-3 sm:px-6 rounded-lg transition text-center"
               onClick={() => setShowModal(true)}
               aria-label="Open rules modal"
             >
