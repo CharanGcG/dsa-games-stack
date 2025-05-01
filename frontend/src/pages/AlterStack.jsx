@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "../components/Header";
 import PushPool from "../components/PushPool";
 import StackDiv from "../components/StackDiv";
 import Stats from "../components/Stats";
-import styles from "../styles/AlterStack.module.css";
+import ResultOverlay from "../components/ResultOverlay";
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+
 
 const generateGameData = (difficulty = "easy") => {
     const values = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -49,6 +52,7 @@ const generateGameData = (difficulty = "easy") => {
 
 
 const AlterStack = () => {
+    const gameEnded = useRef(false);
     const [difficulty, setDifficulty] = useState("easy");
     const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
     const [stack, setStack] = useState([]);
@@ -62,6 +66,9 @@ const AlterStack = () => {
     const [gameStarted, setGameStarted] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const [timerId, setTimerId] = useState(null);
+    const [showResult, setShowResult] = useState(false);
+    const [gameWon, setGameWon] = useState(false);
+    const [lastAction, setLastAction] = useState(null);
 
 
     useEffect(()=>{
@@ -85,46 +92,61 @@ const AlterStack = () => {
         setDifficulty(selectedDifficulty);
         setGameStarted(false);
         setTimeLeft(0);
+        setGameWon(false);
+        setShowResult(false);
+    };
+    
+    const handlePush = (value, index) => {
+        if (!gameStarted) return;
+    
+        setStack(prev => {
+            const val = sign ? value : -value;
+            const newStack = [...prev, val];
+            const newPushes = pushes + 1;
+            const newSum = calculateSum(newStack);
+
+            setPushes(newPushes);
+            setCurrentSum(newSum);
+            setSign(!sign);
+            setLastAction('push');
+    
+            return newStack;
+        });
+    
+        setDisabledIndexes(prev => [...prev, index]);
     };
     
 
-    const handlePush = (value,index)=>{
-        if(!gameStarted)return;
-        setStack(prev => {
-            const val = sign ? value : -value;
-            setSign(!sign);
-            const newStack = [...prev, val];
-            setPushes(pushes+1);
-            setCurrentSum(calculateSum(newStack));
-            return newStack;
-        });
-        setDisabledIndexes(prev => [...prev, index]);
-        
-    };
-
     const handlePop = () => {
-        if(!gameStarted)return;
-        if(stack.length === 0){
-            setMessage("Stack is empty, cannot push");
-        };
-
+        if (!gameStarted) return;
+    
         setStack(prev => {
             const newStack = [...prev];
             newStack.pop();
-            setPops(pops+1);
-            setCurrentSum(calculateSum(newStack));
-            if(newStack.length===0){
+    
+            const newPops = pops + 1;
+            const newSum = calculateSum(newStack);
+    
+            setPops(newPops);
+            setCurrentSum(newSum);
+            setLastAction('pop');
+    
+            if (newStack.length === 0) {
                 setSign(true);
+            } else {
+                setSign(!sign);
             }
+    
             return newStack;
         });
-
+    
         setDisabledIndexes(prev => {
             const newDisabled = [...prev];
             newDisabled.pop();
             return newDisabled;
-        })
-    }
+        });
+    };
+    
 
     const calculateSum = (arr) => arr.reduce((acc, val) => acc + val, 0);
 
@@ -134,79 +156,238 @@ const AlterStack = () => {
         else if (difficulty === 'medium') base = 100;
         else base = 150; // hard
     
-        const efficiency = (1 / (pushes + pops)) * 100; // more efficient => higher score
-        return Math.round(base + efficiency);
+        const efficiency = (1 / (pushes + pops)) * 100;
+    
+        const timeBonus = timeLeft > 0 ? (timeLeft / 100) * 50 : 0;
+    
+        const totalScore = base + efficiency + timeBonus;
+    
+        return Math.round(totalScore);
     };
+    
     
 
     const checkWin = () => {
-        if(!gameStarted)return;
-        if(currentSum === target){
-            if(stack.length>=5){
-                alert(`You win! Congrats! Your Score: ${evaluateScore()}`);
-                initializeGame();
-            }
-            else{
-                alert("The stack must contain atleast 5 elements for the win");
-            }
-            
-        }else{
-            alert("Not yet, keep trying!");
+        if (!gameStarted) return;
+    
+        if (timerId) {
+            clearInterval(timerId);
+            setTimeLeft(0); 
         }
-    }
+    
+        if (currentSum === target) {
+            if (stack.length >= 5) {
+                setShowResult(true);
+                setGameWon(true); 
+                setTimeLeft(timeLeft);  
+                gameEnded.current = true; 
+            } else {
+                toast.error("The stack must contain at least 5 elements for the win.");
+            }
+        } else {
+            toast.info("Not yet, keep trying!");
+        }
+    };
+    
 
     const startTimer = () => {
-        let duration = 90;
-        if (selectedDifficulty==='medium') duration = 120;
-        else if(selectedDifficulty==='hard') duration = 150;
+        gameEnded.current = false; 
+        initializeGame();
+        
+
+        let duration = 30;
+        if (selectedDifficulty === 'medium') duration = 45;
+        else if (selectedDifficulty === 'hard') duration = 90;
+        
         setTimeLeft(duration);
         setGameStarted(true);
         setDifficulty(selectedDifficulty);
-
-        const id = setInterval(()=>{
+    
+        if (timerId) clearInterval(timerId);
+    
+        const id = setInterval(() => {
             setTimeLeft(prev => {
-                if(prev<=1){
-                    clearInterval(id);
-                    setGameStarted(false);
-                    alert("Time's up! Game Over!");
+                if (prev <= 1) {
+                    if (!gameEnded.current) {
+                        clearInterval(id);
+                        setGameStarted(false);
+                        setGameWon(false);
+                        setShowResult(true);
+                        setTimeLeft(0);  
+                        gameEnded.current = true;
+                    }
                     return 0;
                 }
-                return prev-1;
+                return prev - 1;
             });
         }, 1000);
+    
         setTimerId(id);
-    }
+    };
+    
+
+    const reset = () => {
+        if (timerId) clearInterval(timerId);    
+        setStack([]);
+        setCurrentSum(0);
+        setDisabledIndexes([]);
+        setPops(0);
+        setPushes(0);
+        setSign(true);
+        setDifficulty(selectedDifficulty); 
+        setGameStarted(false);
+        setTimeLeft(0);
+        setGameWon(false);
+        setShowResult(false);
+        gameEnded.current = false;
+    };
+    
 
 
     return (
-        <div>
-            <Header/>
-            <div className={styles.controlBar}>
-                <label htmlFor="difficulty">Difficulty: </label>
-                <select
+        <motion.div
+          className="min-h-screen bg-gradient-to-br from-gray-950 to-gray-900 text-white audiowide-regular p-4 space-y-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <ResultOverlay
+            show={showResult}
+            win={gameWon}
+            timeTaken={timeLeft}
+            pushes={pushes}
+            pops={pops}
+            target={target}
+            currentSum={currentSum}
+            difficulty={difficulty}
+            score={evaluateScore()}
+            onRestart={reset}
+            onHome={reset}
+          />
+      
+          <motion.div
+            className="text-xs mb-0 sm:mb-2 lg:block md:block"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 80 }}
+          >
+            <Header />
+          </motion.div>
+      
+          {/* Control Bar */}
+          <motion.div
+            className="text-xs m-0 p-0 pt-0.5 sm:text-sm md:text-base flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-2 sm:gap-4 bg-gray-800 sm:p-3 sm:m-4 sm:rounded-xl shadow-lg"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            {/* First Line on Mobile */}
+            <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4">
+              <label
+                htmlFor="difficulty"
+                className="hidden sm:block xs:inline text-sm sm:text-base font-semibold"
+              >
+                Difficulty:
+              </label>
+              <select
                 id="difficulty"
+                disabled={gameStarted}
                 value={selectedDifficulty}
-                onChange={(e)=>setSelectedDifficulty(e.target.value)}
-                >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-            <button onClick={initializeGame}>Reset</button>
-            <button onClick={startTimer}>Start Game</button>
-            <span>Time Left: {gameStarted ? `${timeLeft} sec` : `Not Started`}</span>
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className="bg-black border border-gray-600 text-white px-2 py-1 rounded-lg shadow-md focus:outline-none text-xs sm:text-sm disabled:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+      
+              <button
+                onClick={startTimer}
+                disabled={gameStarted}
+                className={`text-xs sm:text-sm bg-green-600 px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-semibold sm:font-bold shadow-md
+                  ${!gameStarted ? ' bg-green-600 hover:bg-green-500 cursor-pointer' : 'bg-gray-600 cursor-not-allowed opacity-50'}
+                `}
+              >
+                Start
+              </button>
+              <button
+                onClick={reset}
+                disabled={!gameStarted}
+                className={`text-xs bg-red-600 sm:text-sm px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-semibold sm:font-bold shadow-md
+                  ${gameStarted ? 'bg-red-600 hover:bg-red-500 cursor-pointer' : 'bg-gray-600 cursor-not-allowed opacity-50'}
+                `}
+              >
+                Quit
+              </button>
             </div>
-            <div className={styles.mainWrapper}>
-                <div className={styles.leftPanel}>
-                    <Stats currentSum={currentSum} pushes={pushes} pops={pops} target={target} difficulty={difficulty} />
-                    <PushPool onPush={handlePush} disabledIndexes={disabledIndexes} poolValues={poolValues} gameStarted={gameStarted} />
-                </div>
-                <div className={styles.rightPanel}>
-                    <StackDiv stack={stack} onPop={handlePop} onSub={checkWin} target={target} currentSum={currentSum} gameStarted={gameStarted} />
-                </div>
+      
+            {/* Second Line on Mobile */}
+            <span
+              className={`border p-1.5 text-sm sm:text-lg font-bold text-center w-3/4 sm:w-60 mt-2 sm:mt-0 rounded-lg
+                ${gameStarted && timeLeft < 10 ? 'bg-red-600 text-white' : 'text-yellow-400'}
+              `}
+            >
+              ⏱️ {gameStarted ? `${timeLeft} sec` : 'Not Started'}
+            </span>
+          </motion.div>
+      
+          {/* Main Layout with PushPool and Stack Side-by-Side on Mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-[35%_65%] gap-0">
+            {/* Stats component hidden on mobile */}
+            <motion.div
+              className="w-full md:block md:w-full"
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <Stats
+                gameStarted={gameStarted}
+                currentSum={currentSum}
+                pushes={pushes}
+                pops={pops}
+                target={target}
+                difficulty={difficulty}
+              />
+            </motion.div>
+      
+            {/* Main Flex Layout for PushPool and Stack Side-by-Side */}
+            <div className="flex gap-4 sm:gap-6 p-2 sm:p-4 items-start justify-between sm:pt-1 sm:flex-row-reverse">
+              {/* PushPool Component on the left (mobile view) */}
+              {/* Stack Component on the right (mobile view) */}
+              <motion.div
+                className="w-1/2 sm:w-1/2 md:w-1/2 space-y-6"
+                initial={{ x: 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <StackDiv stack={stack} lastAction={lastAction} />
+              </motion.div>
+      
+              <motion.div
+                className="w-1/2 h-full sm:w-1/2 md:w-1/2 space-y-6"
+                initial={{ x: 0, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <PushPool
+                  onPush={handlePush}
+                  disabledIndexes={disabledIndexes}
+                  poolValues={poolValues}
+                  gameStarted={gameStarted}
+                  onPop={handlePop}
+                  onSub={checkWin}
+                  target={target}
+                  currentSum={currentSum}
+                  stack={stack}
+                />
+              </motion.div>
             </div>
-        </div>
-    )
+          </div>
+        </motion.div>
+      );
+      
+    
+    
 };
 
 export default AlterStack;
