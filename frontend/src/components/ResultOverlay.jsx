@@ -3,15 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 const ResultOverlay = ({
   show,
   win,
-  timeTaken,
-  pushes,
-  pops,
-  target,
-  currentSum,
-  difficulty,
-  score,
-  onRestart,
-  onHome,
+  message,
+  stats,
+  onRestart
 }) => {
   const buttonClass = "px-4 py-2 rounded-lg font-bold shadow-md transition";
   const winButtonClass = "bg-green-600 hover:bg-green-500";
@@ -34,23 +28,26 @@ const ResultOverlay = ({
             transition={{ duration: 0.3, type: 'spring', stiffness: 100 }}
           >
             <h2 className="text-3xl font-bold">
-              {win ? 'Congratulations! You Win!' : 'Popped Out! Try Again?'}
+              {message}
             </h2>
 
             <div className="text-left text-sm sm:text-base space-y-1 bg-gray-800 p-4 rounded-lg">
               <h1 className='text-3xl text-center mb-5'>
-                <span className="font-semibold">Score: </span> {win ? score : '0'}
+                <span className="font-semibold">Score: </span> {stats.Score}
               </h1>
-              <p><span className="font-semibold">🎯 Target:</span> {target}</p>
-              <p><span className="font-semibold">➕ Current Sum:</span> {currentSum}</p>
-              <p><span className="font-semibold">📦 Pushes:</span> {pushes}</p>
-              <p><span className="font-semibold">📤 Pops:</span> {pops}</p>
-              <p><span className="font-semibold">📈 Difficulty:</span> {difficulty}</p>
-              <p><span className="font-semibold">⏱️ Time Left:</span> {timeTaken} sec</p>
+              {
+                Object.entries(stats).map(([label, value], index) => (
+                  label !== "Score" && (
+                    <p key={index}>
+                      <span className='font-semibold'>{label}:</span> {value}
+                    </p>
+                  )
+                ))
+              }
             </div>
 
             <button
-              onClick={win ? onHome : onRestart}
+              onClick={onRestart}
               className={`${buttonClass} ${win ? winButtonClass : loseButtonClass}`}
             >
               {win ? 'Play New Game' : 'Play New Game'}

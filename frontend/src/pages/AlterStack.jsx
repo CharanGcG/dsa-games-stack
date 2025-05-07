@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Header from "../components/Header";
-import PushPool from "../components/PushPool";
-import StackDiv from "../components/StackDiv";
-import Stats from "../components/Stats";
+import PushPool from "../components/AlterStack/PushPool";
+import StackDiv from "../components/AlterStack/StackDiv";
+import Stats from "../components/AlterStack/Stats";
 import ResultOverlay from "../components/ResultOverlay";
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -52,6 +52,18 @@ const generateGameData = (difficulty = "easy") => {
 
 
 const AlterStack = () => {
+  const appName = 'Alter Stack';
+
+  const rules = [
+    "Starting the Game: Select difficulty, click on the Start button, timer starts.",
+    "Goal: Build a stack of numbers that adds up exactly to the target sum before the time runs out.",
+    "What is a stack? Think of it like a vertical pile — you can only add or remove from the top.",
+    "Push: Add a number to the top of the stack. Pop: Remove the top number.",
+    "When pushing, numbers will alternate in sign: + - + -, starting with a positive.",
+    "You must have at least 5 numbers in your stack to submit it.",
+    "Tip: Use fewer pushes and pops for a better score!"
+  ];
+
     const gameEnded = useRef(false);
     const [difficulty, setDifficulty] = useState("easy");
     const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
@@ -254,15 +266,19 @@ const AlterStack = () => {
           <ResultOverlay
             show={showResult}
             win={gameWon}
-            timeTaken={timeLeft}
-            pushes={pushes}
-            pops={pops}
-            target={target}
-            currentSum={currentSum}
-            difficulty={difficulty}
-            score={evaluateScore()}
+            message={gameWon ? 'Congratulations! You Win!' : 'Popped Out! Try Again?'}
+            stats={{
+              Score: gameWon ? evaluateScore() : '0',
+              "🎯 Target": target,
+              "➕ Current Sum": currentSum,
+              "📦 Pushes": pushes,
+              "📤 Pops": pops,
+              "📈 Difficulty": difficulty,
+              "⏱️ Time Left": `${timeLeft} sec`,
+              
+            }}
+            
             onRestart={reset}
-            onHome={reset}
           />
       
           <motion.div
@@ -271,7 +287,7 @@ const AlterStack = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 80 }}
           >
-            <Header />
+            <Header appName={appName} rules={rules} />
           </motion.div>
       
           {/* Control Bar */}

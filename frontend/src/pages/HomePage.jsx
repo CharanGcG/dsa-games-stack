@@ -43,6 +43,57 @@ const QueuePreview = ({ queueItems = [10, -5, -3, 15] }) => {
   );
 };
 
+const BSTreePreview = ({ root = 10, left = 5, right = 15, leftLeft = 3, leftRight = 7, rightLeft = 12, rightRight = 18 }) => {
+  return (
+    <div className="bg-white border-2 border-blue-400 rounded-xl shadow-lg p-4 w-full max-w-sm mx-auto">
+      <div className="relative h-40 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          {/* Level 0: Root Node */}
+          <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+            {root}
+          </div>
+          
+          {/* Level 1: Left and Right Nodes */}
+          <div className="flex space-x-0">
+            {/* Left Node */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                {left}
+              </div>
+              {/* Level 2: Left-Left and Left-Right Nodes */}
+              <div className="flex space-x-0">
+                <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                  {leftLeft}
+                </div>
+                <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                  {leftRight}
+                </div>
+              </div>
+            </div>
+            
+            {/* Right Node */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                {right}
+              </div>
+              {/* Level 2: Right-Left and Right-Right Nodes */}
+              <div className="flex space-x-0">
+                <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                  {rightLeft}
+                </div>
+                <div className="bg-blue-400 text-black font-bold py-1 px-3 mx-1 rounded shadow text-center min-w-[40px]">
+                  {rightRight}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 
 const Homepage = () => {
   const games = [
@@ -55,11 +106,19 @@ const Homepage = () => {
     },
     {
       id: 2,
+      name: 'BSTree',
+      comp: BSTreePreview,
+      multiplayer: 'Single',
+      description: 'Place the given elements perfectly in the Binary Search Tree',
+    },
+    {
+      id: 3,
       name: 'Queue Stacks',
       comp: QueuePreview,
       multiplayer: 'Dual',
       description: 'Queue + Stack based multiplayer game, Coming soon!',
     }
+
   ];
 
   return (
