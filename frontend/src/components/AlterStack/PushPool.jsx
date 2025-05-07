@@ -48,7 +48,7 @@ const PushPool = ({ onPush, disabledIndexes, stack, poolValues, gameStarted, onP
                 </button>
                 <button
                     onClick={onSub}
-                    disabled={!gameStarted || target !== currentSum || stack.length <= 5}
+                    disabled={!gameStarted || target !== currentSum || stack.length < 5}
                     className={`px-6 py-2 font-bold rounded-xl transition transform 
                         ${(!gameStarted || target !== currentSum || stack.length < 5) ? submitDisabledClass : submitActiveClass}`}
                 >
