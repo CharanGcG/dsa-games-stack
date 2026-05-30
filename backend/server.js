@@ -1,20 +1,23 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import cors from 'cors'
-import connectDB from './config/db.js'
+import app from "./app.js";
+import connectDB from "./config/db.js";
+import { assertProductionEnv, env } from "./config/env.js";
+import { seedGames } from "./services/gameSeed.service.js";
 
-dotenv.config()
+const startServer = async () => {
+  assertProductionEnv();
 
-const app = express()
-const PORT = process.env.PORT || 5000
+  const connection = await connectDB();
+  if (connection) {
+    await seedGames();
+    console.log("Game registry seeded");
+  }
 
-connectDB();
+  app.listen(env.port, () => {
+    console.log(`Server is running on port ${env.port}`);
+  });
+};
 
-app.use(cors())
-app.use(express.json())
-
-app.get('/', (req, res) => res.send('API is running 🚀'))
-
-app.listen(PORT, ()=>{
-    console.log(`Server is running on port ${PORT}`);
-})
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});

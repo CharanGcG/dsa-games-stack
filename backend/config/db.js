@@ -1,13 +1,20 @@
 import mongoose from "mongoose";
+import { env } from "./env.js";
 
 const connectDB = async () => {
-    try{
-        const conn = await mongoose.connect(process.env.MONGO_URI);
-        console.log(`MongoDb connected: ${conn.connection.host}`);
-    }catch(err){
-        console.error("MongoDb connection error: ", err);
+  if (!env.mongoUri) {
+    console.warn("MONGO_URI is not configured. Database-backed routes will not work.");
+    return null;
+  }
 
-    }
-}
+  try {
+    const conn = await mongoose.connect(env.mongoUri);
+    console.log(`MongoDB connected: ${conn.connection.host}`);
+    return conn;
+  } catch (err) {
+    console.error("MongoDB connection error:", err.message);
+    return null;
+  }
+};
 
 export default connectDB;
