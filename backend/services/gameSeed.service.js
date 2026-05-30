@@ -49,6 +49,8 @@ const games = [
 ];
 
 export const seedGames = async () => {
+  const allowedSlugs = games.map((game) => game.slug);
+
   await Promise.all(
     games.map((game) =>
       Game.updateOne(
@@ -58,4 +60,6 @@ export const seedGames = async () => {
       )
     )
   );
+
+  await Game.deleteMany({ slug: { $nin: allowedSlugs } });
 };
