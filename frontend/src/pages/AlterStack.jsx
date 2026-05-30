@@ -103,7 +103,7 @@ const AlterStack = () => {
             return;
         }
 
-        if (scoreSaveStatus === "saving" || scoreSaveStatus === "saved") return;
+        if (scoreSaveStatus !== "idle") return;
 
         const saveAttempt = async () => {
             setScoreSaveStatus("saving");

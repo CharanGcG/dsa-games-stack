@@ -23,8 +23,8 @@ export const scoreAlterStack = ({ difficulty, stats }) => {
 
   assertNumberRange(target, "target", -1000, 1000);
   assertNumberRange(finalSum, "finalSum", -1000, 1000);
-  assertNumberRange(pushes, "pushes", 0, 10);
-  assertNumberRange(pops, "pops", 0, 10);
+  assertNumberRange(pushes, "pushes", 0, 100);
+  assertNumberRange(pops, "pops", 0, 100);
   assertNumberRange(stackLength, "stackLength", 0, 10);
   assertNumberRange(timeLeft, "timeLeft", 0, config.maxTime);
 
