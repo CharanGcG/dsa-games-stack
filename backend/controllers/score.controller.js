@@ -1,9 +1,10 @@
 import Game from "../models/Game.js";
 import Score from "../models/Score.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
-import { assertOneOf, requireFields } from "../middleware/validate.js";
+import { requireFields } from "../middleware/validate.js";
 import { evaluateAchievementsForScore } from "../services/achievement.service.js";
 import { scoreGameAttempt } from "../services/scoring/index.js";
+import { validateSessionAttempt } from "../services/gameSession.service.js";
 import { httpError } from "../utils/httpError.js";
 
 const updateUserStats = async (user, score) => {
@@ -28,11 +29,17 @@ const updateUserStats = async (user, score) => {
 };
 
 export const submitScore = asyncHandler(async (req, res) => {
-  requireFields(req.body, ["gameSlug", "difficulty", "stats"]);
+  requireFields(req.body, ["sessionId", "actions"]);
 
-  const gameSlug = String(req.body.gameSlug).trim().toLowerCase();
-  const difficulty = String(req.body.difficulty).trim().toLowerCase();
-  assertOneOf(difficulty, ["easy", "medium", "hard"], "difficulty");
+  const { session, stats } = await validateSessionAttempt({
+    user: req.user,
+    sessionId: req.body.sessionId,
+    actions: req.body.actions,
+    timeLeft: req.body.timeLeft,
+  });
+
+  const gameSlug = session.gameSlug;
+  const difficulty = session.difficulty;
 
   const game = await Game.findOne({ slug: gameSlug });
   if (!game) throw httpError(404, "Game not found");
@@ -46,7 +53,7 @@ export const submitScore = asyncHandler(async (req, res) => {
   const result = scoreGameAttempt({
     gameSlug,
     difficulty,
-    stats: req.body.stats,
+    stats,
   });
 
   const score = await Score.create({

@@ -50,15 +50,17 @@ export const verifyToken = (token, secret) => {
   return decoded;
 };
 
-export const createAuthTokens = (user) => ({
-  accessToken: createToken(
+export const createAccessToken = (user) =>
+  createToken(
     { sub: user._id.toString(), role: user.role, type: "access" },
     env.accessTokenSecret,
     env.accessTokenTtlSeconds
-  ),
-  refreshToken: createToken(
-    { sub: user._id.toString(), role: user.role, type: "refresh" },
-    env.refreshTokenSecret,
-    env.refreshTokenTtlSeconds
-  ),
-});
+  );
+
+export const createOpaqueToken = () => crypto.randomBytes(64).toString("base64url");
+
+export const hashToken = (token) =>
+  crypto.createHash("sha256").update(`${env.refreshTokenSecret}:${token}`).digest("hex");
+
+export const getRefreshExpiry = () =>
+  new Date(Date.now() + env.refreshTokenTtlSeconds * 1000);

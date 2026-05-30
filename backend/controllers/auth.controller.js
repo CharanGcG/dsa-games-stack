@@ -1,16 +1,33 @@
+import RefreshToken from "../models/RefreshToken.js";
 import User from "../models/User.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { requireFields } from "../middleware/validate.js";
 import { httpError } from "../utils/httpError.js";
-import { createAuthTokens, verifyToken } from "../utils/tokens.js";
-import { env } from "../config/env.js";
+import {
+  createAccessToken,
+  createOpaqueToken,
+  getRefreshExpiry,
+  hashToken,
+} from "../utils/tokens.js";
 
 const normalizeEmail = (email) => String(email).trim().toLowerCase();
 
-const buildAuthResponse = (user) => ({
-  user: user.toSafeObject(),
-  tokens: createAuthTokens(user),
-});
+const createAuthResponse = async (user) => {
+  const refreshToken = createOpaqueToken();
+  await RefreshToken.create({
+    user: user._id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt: getRefreshExpiry(),
+  });
+
+  return {
+    user: user.toSafeObject(),
+    tokens: {
+      accessToken: createAccessToken(user),
+      refreshToken,
+    },
+  };
+};
 
 export const register = asyncHandler(async (req, res) => {
   requireFields(req.body, ["username", "email", "password"]);
@@ -43,7 +60,7 @@ export const register = asyncHandler(async (req, res) => {
   user.setPassword(password);
   await user.save();
 
-  res.status(201).json(buildAuthResponse(user));
+  res.status(201).json(await createAuthResponse(user));
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -57,31 +74,51 @@ export const login = asyncHandler(async (req, res) => {
     throw httpError(401, "Invalid email or password");
   }
 
-  res.json(buildAuthResponse(user));
+  res.json(await createAuthResponse(user));
 });
 
 export const refresh = asyncHandler(async (req, res) => {
   requireFields(req.body, ["refreshToken"]);
 
-  let payload;
-  try {
-    payload = verifyToken(req.body.refreshToken, env.refreshTokenSecret);
-  } catch (err) {
+  const currentHash = hashToken(req.body.refreshToken);
+  const storedToken = await RefreshToken.findOne({ tokenHash: currentHash });
+  if (!storedToken || storedToken.revokedAt || storedToken.expiresAt <= new Date()) {
     throw httpError(401, "Invalid or expired refresh token");
   }
 
-  if (payload.type !== "refresh") {
-    throw httpError(401, "Invalid token type");
-  }
-
-  const user = await User.findById(payload.sub);
+  const user = await User.findById(storedToken.user);
   if (!user) {
     throw httpError(401, "User no longer exists");
   }
 
-  res.json({ tokens: createAuthTokens(user) });
+  const nextRefreshToken = createOpaqueToken();
+  const nextHash = hashToken(nextRefreshToken);
+
+  storedToken.revokedAt = new Date();
+  storedToken.replacedByTokenHash = nextHash;
+  await storedToken.save();
+
+  await RefreshToken.create({
+    user: user._id,
+    tokenHash: nextHash,
+    expiresAt: getRefreshExpiry(),
+  });
+
+  res.json({
+    tokens: {
+      accessToken: createAccessToken(user),
+      refreshToken: nextRefreshToken,
+    },
+  });
 });
 
 export const logout = asyncHandler(async (req, res) => {
+  if (req.body?.refreshToken) {
+    await RefreshToken.updateOne(
+      { tokenHash: hashToken(req.body.refreshToken), revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+  }
+
   res.json({ message: "Logged out" });
 });

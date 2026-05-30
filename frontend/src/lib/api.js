@@ -37,6 +37,12 @@ export const loginUser = (body) =>
     body,
   });
 
+export const logoutUser = (body) =>
+  apiRequest("/auth/logout", {
+    method: "POST",
+    body,
+  });
+
 export const getMe = (token) => apiRequest("/users/me", { token });
 
 export const getMyProgress = (token) => apiRequest("/users/me/progress", { token });
@@ -50,6 +56,13 @@ export const getLeaderboard = (gameSlug, difficulty = "easy") =>
 
 export const getMyRank = (token, gameSlug, difficulty = "easy") =>
   apiRequest(`/leaderboards/${gameSlug}/${difficulty}/me`, { token });
+
+export const createGameSession = (token, body) =>
+  apiRequest("/game-sessions", {
+    method: "POST",
+    token,
+    body,
+  });
 
 export const submitScore = (token, body) =>
   apiRequest("/scores", {

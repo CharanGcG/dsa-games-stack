@@ -7,7 +7,7 @@ import ResultOverlay from "../components/ResultOverlay";
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { useAuth } from "../context/AuthContext";
-import { submitScore } from "../lib/api";
+import { createGameSession, submitScore } from "../lib/api";
 
 
 const generateGameData = (difficulty = "easy") => {
@@ -86,6 +86,8 @@ const AlterStack = () => {
     const [lastAction, setLastAction] = useState(null);
     const [savedScore, setSavedScore] = useState(null);
     const [scoreSaveStatus, setScoreSaveStatus] = useState("idle");
+    const [gameSessionId, setGameSessionId] = useState(null);
+    const [actionLog, setActionLog] = useState([]);
 
 
     useEffect(()=>{
@@ -93,6 +95,8 @@ const AlterStack = () => {
         return () => {
             if (timerId) clearInterval(timerId);
         }
+        // Initial local setup only; rounds are reset explicitly by Start/Quit.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -103,6 +107,12 @@ const AlterStack = () => {
             return;
         }
 
+        if (!gameSessionId) {
+            setScoreSaveStatus("failed");
+            toast.error("No verified game session found for this attempt.");
+            return;
+        }
+
         if (scoreSaveStatus !== "idle") return;
 
         const saveAttempt = async () => {
@@ -110,16 +120,9 @@ const AlterStack = () => {
 
             try {
                 const data = await submitScore(tokens.accessToken, {
-                    gameSlug: "alter-stack",
-                    difficulty,
-                    stats: {
-                        target,
-                        finalSum: currentSum,
-                        pushes,
-                        pops,
-                        stackLength: stack.length,
-                        timeLeft,
-                    },
+                    sessionId: gameSessionId,
+                    actions: actionLog,
+                    timeLeft,
                 });
 
                 setSavedScore(data.score);
@@ -132,11 +135,11 @@ const AlterStack = () => {
         };
 
         saveAttempt();
-    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, difficulty, target, currentSum, pushes, pops, stack.length, timeLeft]);
+    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, gameSessionId, actionLog, timeLeft]);
 
-    const initializeGame = () => {
+    const initializeGame = (sessionPayload = null) => {
         if(timerId) clearInterval(timerId);
-        const { pool, target } = generateGameData(difficulty);
+        const { pool, target } = sessionPayload || generateGameData(difficulty);
         setPoolValues(pool);
         setTarget(target);
         setStack([]);
@@ -152,6 +155,7 @@ const AlterStack = () => {
         setShowResult(false);
         setSavedScore(null);
         setScoreSaveStatus("idle");
+        setActionLog([]);
     };
     
     const handlePush = (value, index) => {
@@ -167,6 +171,7 @@ const AlterStack = () => {
             setCurrentSum(newSum);
             setSign(!sign);
             setLastAction('push');
+            setActionLog(actions => [...actions, { type: 'push', index }]);
     
             return newStack;
         });
@@ -188,6 +193,7 @@ const AlterStack = () => {
             setPops(newPops);
             setCurrentSum(newSum);
             setLastAction('pop');
+            setActionLog(actions => [...actions, { type: 'pop' }]);
     
             if (newStack.length === 0) {
                 setSign(true);
@@ -248,20 +254,39 @@ const AlterStack = () => {
     };
     
 
-    const startTimer = () => {
+    const startTimer = async () => {
         gameEnded.current = false; 
-        initializeGame();
+        let sessionPayload = null;
+        let sessionId = null;
+        
+        if (isLoggedIn) {
+            try {
+                const data = await createGameSession(tokens.accessToken, {
+                    gameSlug: "alter-stack",
+                    difficulty: selectedDifficulty,
+                });
+                sessionPayload = data.session.payload;
+                sessionId = data.session.id;
+            } catch (err) {
+                toast.error(err.message);
+                return;
+            }
+        }
+
+        initializeGame(sessionPayload);
         
 
-        let duration = 30;
-        if (selectedDifficulty === 'medium') duration = 45;
-        else if (selectedDifficulty === 'hard') duration = 90;
+        let duration = sessionPayload?.duration || 30;
+        if (!sessionPayload && selectedDifficulty === 'medium') duration = 45;
+        else if (!sessionPayload && selectedDifficulty === 'hard') duration = 90;
         
         setTimeLeft(duration);
         setGameStarted(true);
         setDifficulty(selectedDifficulty);
         setSavedScore(null);
         setScoreSaveStatus("idle");
+        setGameSessionId(sessionId);
+        setActionLog([]);
     
         if (timerId) clearInterval(timerId);
     
@@ -301,6 +326,8 @@ const AlterStack = () => {
         setShowResult(false);
         setSavedScore(null);
         setScoreSaveStatus("idle");
+        setGameSessionId(null);
+        setActionLog([]);
         gameEnded.current = false;
     };
     

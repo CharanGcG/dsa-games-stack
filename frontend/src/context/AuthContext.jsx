@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getMe, loginUser, registerUser } from "../lib/api";
+import { getMe, loginUser, logoutUser, registerUser } from "../lib/api";
 
 const STORAGE_KEY = "dsaGamesAuth";
 const AuthContext = createContext(null);
@@ -58,11 +58,16 @@ export const AuthProvider = ({ children }) => {
     return payload.user;
   }, []);
 
-  const logout = () => {
+  const logout = useCallback(async () => {
+    const refreshToken = tokens?.refreshToken;
     setUser(null);
     setTokens(null);
     localStorage.removeItem(STORAGE_KEY);
-  };
+
+    if (refreshToken) {
+      await logoutUser({ refreshToken }).catch(() => {});
+    }
+  }, [tokens?.refreshToken]);
 
   const value = useMemo(
     () => ({
@@ -74,12 +79,13 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
     }),
-    [authReady, user, tokens, login, register]
+    [authReady, user, tokens, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const value = useContext(AuthContext);
   if (!value) throw new Error("useAuth must be used inside AuthProvider");

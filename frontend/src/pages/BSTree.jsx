@@ -6,7 +6,7 @@ import NumberDisplay from '../components/BSTree/NumberDisplay.jsx';
 import TreeVisualizer from '../components/BSTree/TreeVisualizer.jsx';
 import ResultOverlay from "../components/ResultOverlay.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { submitScore } from "../lib/api.js";
+import { createGameSession, submitScore } from "../lib/api.js";
 
 const generateValidNumbers = () => {
     const values = Array.from({ length: 101 }, (_, i) => i);
@@ -58,11 +58,14 @@ const BSTree = () => {
     const [skippedNumbers, setSkippedNumbers] = useState(0);
     const [savedScore, setSavedScore] = useState(null);
     const [scoreSaveStatus, setScoreSaveStatus] = useState("idle");
+    const [gameSessionId, setGameSessionId] = useState(null);
+    const [actionLog, setActionLog] = useState([]);
 
     useEffect(() => {
-        const nums = generateValidNumbers();
-        setNumbers(nums);
-    }, []);
+        reset();
+        // Start a fresh puzzle only when login mode changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn]);
 
     useEffect(() => {
         if (numbers.length === 15 && currentIdx < 15) {
@@ -80,6 +83,12 @@ const BSTree = () => {
             return;
         }
 
+        if (!gameSessionId) {
+            setScoreSaveStatus("failed");
+            toast.error("No verified game session found for this attempt.");
+            return;
+        }
+
         if (scoreSaveStatus !== "idle") return;
 
         const saveAttempt = async () => {
@@ -87,13 +96,8 @@ const BSTree = () => {
 
             try {
                 const data = await submitScore(tokens.accessToken, {
-                    gameSlug: "bstree",
-                    difficulty: "easy",
-                    stats: {
-                        occupied,
-                        skipped: skippedNumbers,
-                        totalNodes: 15,
-                    },
+                    sessionId: gameSessionId,
+                    actions: actionLog,
                 });
 
                 setSavedScore(data.score);
@@ -107,9 +111,12 @@ const BSTree = () => {
         };
 
         saveAttempt();
-    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, occupied, skippedNumbers]);
+    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, gameSessionId, actionLog]);
 
     const handleSkip = () => {
+        const nextActions = [...actionLog, { type: "skip" }];
+        setActionLog(nextActions);
+
         if (currentIdx < 14) {
             setCurrentIdx(currentIdx + 1);
             setSkippedNumbers(skippedNumbers+1);
@@ -130,8 +137,24 @@ const BSTree = () => {
     };
     
 
-    const reset = () => {
-        setNumbers(generateValidNumbers());
+    const reset = async () => {
+        let nextNumbers = generateValidNumbers();
+        let nextSessionId = null;
+
+        if (isLoggedIn && tokens?.accessToken) {
+            try {
+                const data = await createGameSession(tokens.accessToken, {
+                    gameSlug: "bstree",
+                    difficulty: "easy",
+                });
+                nextNumbers = data.session.payload.numbers;
+                nextSessionId = data.session.id;
+            } catch (err) {
+                toast.error(err.message);
+            }
+        }
+
+        setNumbers(nextNumbers);
         setCurrentIdx(0);
         setTree(Array(15).fill(null));
         setOccupied(0);
@@ -141,9 +164,13 @@ const BSTree = () => {
         setSkippedNumbers(0);
         setSavedScore(null);
         setScoreSaveStatus("idle");
+        setGameSessionId(nextSessionId);
+        setActionLog([]);
     }
 
     const handlePlacement = (index) => {
+        const nextActions = [...actionLog, { type: "place", index }];
+        setActionLog(nextActions);
         const value = numbers[currentIdx];
         const newTree = [...tree];
         newTree[index] = value;
