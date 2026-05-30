@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import AuthStatus from '../components/AuthStatus';
+import { getGames } from '../lib/api';
 
 
 const StackPreview = ({ stackItems = [6, -5, 3, -2] }) => {
@@ -95,31 +98,64 @@ const BSTreePreview = ({ root = 10, left = 5, right = 15, leftLeft = 3, leftRigh
 
 
 
-const Homepage = () => {
-  const games = [
+const previewBySlug = {
+  'alter-stack': StackPreview,
+  bstree: BSTreePreview,
+  'queue-stacks': QueuePreview,
+};
+
+const routeBySlug = {
+  'alter-stack': '/alter-stack',
+  bstree: '/bstree',
+  'queue-stacks': '/queue-stacks',
+};
+
+const fallbackGames = [
     {
       id: 1,
+      slug: 'alter-stack',
       name: 'Alter Stack',
-      comp: StackPreview,
-      multiplayer: 'Single',
+      isMultiplayer: false,
+      status: 'live',
       description: 'Push and pop elements to match a target sum.',
     },
     {
       id: 2,
+      slug: 'bstree',
       name: 'BSTree',
-      comp: BSTreePreview,
-      multiplayer: 'Single',
+      isMultiplayer: false,
+      status: 'beta',
       description: 'Place the given elements perfectly in the Binary Search Tree',
     },
     {
       id: 3,
+      slug: 'queue-stacks',
       name: 'Queue Stacks',
-      comp: QueuePreview,
-      multiplayer: 'Dual',
+      isMultiplayer: true,
+      status: 'coming-soon',
       description: 'Queue + Stack based multiplayer game, Coming soon!',
     }
 
   ];
+
+const Homepage = () => {
+  const [games, setGames] = useState(fallbackGames);
+  const [loadingGames, setLoadingGames] = useState(true);
+
+  useEffect(() => {
+    const loadGames = async () => {
+      try {
+        const data = await getGames();
+        setGames(data.games);
+      } catch {
+        toast.error("Using local game list. Backend games could not load.");
+      } finally {
+        setLoadingGames(false);
+      }
+    };
+
+    loadGames();
+  }, []);
 
   return (
     <motion.div
@@ -136,8 +172,9 @@ const Homepage = () => {
     <span className="hidden md:block text-gray-500 text-sm">v1.0.0</span>
   </div>
 
-  {/* Right section: Feedback button */}
-  <div className="mt-3 md:mt-0 flex justify-center md:justify-end">
+  {/* Right section: Account and Feedback */}
+  <div className="mt-3 flex flex-wrap justify-center gap-3 md:mt-0 md:justify-end">
+    <AuthStatus />
     <a
       href="https://forms.gle/6Zm2zZ88rmyYk2UJ9"
       target="_blank"
@@ -149,30 +186,42 @@ const Homepage = () => {
   </div>
 </div>
 
+      {loadingGames && (
+        <p className="px-4 text-sm text-gray-400 sm:px-10">Loading games...</p>
+      )}
+
 
 
 
       {/* Games Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 sm:ml-10 sm:mr-10">
-        {games.map((game) => (
+        {games.map((game) => {
+          const Preview = previewBySlug[game.slug] || StackPreview;
+          const route = routeBySlug[game.slug] || `/${game.slug}`;
+          const isComingSoon = game.status === 'coming-soon';
+
+          return (
           <div
-            key={game.id}
+            key={game._id || game.id || game.slug}
             className="bg-gray-800 rounded-lg overflow-hidden shadow-lg text-center p-4"
           >
             <div className="mb-4">
-                <game.comp />
+                <Preview />
             </div>
             <h2 className="text-2xl font-semibold text-yellow-400 mb-2">{game.name}</h2>
-            <p className="text-sm text-gray-400 mb-2">Multiplayer: {game.multiplayer}</p>
+            <p className="text-sm text-gray-400 mb-2">Multiplayer: {game.isMultiplayer ? 'Dual' : 'Single'}</p>
+            <p className="mb-2 text-xs uppercase tracking-wide text-cyan-300">{game.status}</p>
             <p className="text-sm text-gray-300 mb-4">{game.description}</p>
             <Link
-              to={`/${game.name.toLowerCase().replace(/ /g, '-')}`}
-              className="block bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md"
+              to={route}
+              className={`block text-white py-2 px-4 rounded-lg shadow-md ${
+                isComingSoon ? 'bg-gray-600 hover:bg-gray-500' : 'bg-blue-600 hover:bg-blue-500'
+              }`}
             >
-              Play {game.name}
+              {isComingSoon ? 'Preview' : 'Play'} {game.name}
             </Link>
           </div>
-        ))}
+        )})}
       </div>
 
       <Footer />

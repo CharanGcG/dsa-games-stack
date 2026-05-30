@@ -1,5 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion';
-
 const PushPool = ({ onPush, disabledIndexes, stack, poolValues, gameStarted, onPop, onSub, target, currentSum }) => {
     // Common button disabled class logic
     const disabledButtonClass = "bg-gray-600 cursor-not-allowed opacity-50";

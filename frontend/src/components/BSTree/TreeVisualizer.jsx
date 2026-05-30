@@ -45,7 +45,7 @@
 
 export default TreeVisualizer;*/
 
-const TreeVisualizer = ({ tree, onPlace, currentValue, disabledNodes }) => {
+const TreeVisualizer = ({ tree, onPlace, disabledNodes }) => {
     const renderRow = (indicesInRow) => {
         return (
             <div className="grid [grid-template-columns:repeat(15,1fr)] gap-1 sm:mb-15 mb-7">

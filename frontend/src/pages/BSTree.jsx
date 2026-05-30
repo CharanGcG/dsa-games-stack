@@ -5,6 +5,8 @@ import Header from '../components/Header.jsx';
 import NumberDisplay from '../components/BSTree/NumberDisplay.jsx';
 import TreeVisualizer from '../components/BSTree/TreeVisualizer.jsx';
 import ResultOverlay from "../components/ResultOverlay.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { submitScore } from "../lib/api.js";
 
 const generateValidNumbers = () => {
     const values = Array.from({ length: 101 }, (_, i) => i);
@@ -35,6 +37,7 @@ const getDisabledNodes = (tree, currentValue) => {
 
 const BSTree = () => {
     const appName = 'BSTree';
+    const { isLoggedIn, tokens } = useAuth();
     const rules = [
         'Place the number one by one in a node that maintains Binary search tree property.',
         'Green Nodes: Number can be placed',
@@ -53,6 +56,8 @@ const BSTree = () => {
     const [gameWon, setGameWon] = useState(false);
     const [showResult, setShowResult] = useState(false);
     const [skippedNumbers, setSkippedNumbers] = useState(0);
+    const [savedScore, setSavedScore] = useState(null);
+    const [scoreSaveStatus, setScoreSaveStatus] = useState("idle");
 
     useEffect(() => {
         const nums = generateValidNumbers();
@@ -67,12 +72,51 @@ const BSTree = () => {
         }
     }, [tree, currentIdx, numbers]);
 
+    useEffect(() => {
+        if (!showResult) return;
+
+        if (!isLoggedIn) {
+            setScoreSaveStatus("login-required");
+            return;
+        }
+
+        if (scoreSaveStatus === "saving" || scoreSaveStatus === "saved") return;
+
+        const saveAttempt = async () => {
+            setScoreSaveStatus("saving");
+
+            try {
+                const data = await submitScore(tokens.accessToken, {
+                    gameSlug: "bstree",
+                    difficulty: "easy",
+                    stats: {
+                        occupied,
+                        skipped: skippedNumbers,
+                        totalNodes: 15,
+                    },
+                });
+
+                setSavedScore(data.score);
+                setGameWon(data.score.won);
+                setScoreSaveStatus("saved");
+                toast.success("Score saved");
+            } catch (err) {
+                setScoreSaveStatus("failed");
+                toast.error(err.message);
+            }
+        };
+
+        saveAttempt();
+    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, occupied, skippedNumbers]);
+
     const handleSkip = () => {
         if (currentIdx < 14) {
             setCurrentIdx(currentIdx + 1);
             setSkippedNumbers(skippedNumbers+1);
         } else {
-            setSkippedNumbers(skippedNumbers+1);
+            const finalSkipped = skippedNumbers + 1;
+            setSkippedNumbers(finalSkipped);
+            setGameWon(false);
             setShowResult(true);
             const score = Math.floor((occupied / 15) * 100);
             toast.success(`Game over! Score: ${score}/100`);
@@ -95,6 +139,8 @@ const BSTree = () => {
         setGameWon(false);
         setShowResult(false);
         setSkippedNumbers(0);
+        setSavedScore(null);
+        setScoreSaveStatus("idle");
     }
 
     const handlePlacement = (index) => {
@@ -107,6 +153,8 @@ const BSTree = () => {
         if (currentIdx < 14) {
             setCurrentIdx(currentIdx + 1);
         } else {
+            const finalOccupied = occupied + 1;
+            setGameWon(finalOccupied === 15);
             setShowResult(true);
             const score = Math.floor(((occupied + 1) / 15) * 100);
             toast.success(`Game over! Score: ${score}/100`);
@@ -125,9 +173,12 @@ const BSTree = () => {
                 win={gameWon}
                 message={'Stats'}
                 stats={{
-                    Score: evaluateScore(),
+                    Score: savedScore?.score ?? evaluateScore(),
                     "Occupied": occupied,
-                    "Skipped": skippedNumbers
+                    "Skipped": skippedNumbers,
+                    "Save Status": scoreSaveStatus === "login-required"
+                        ? "Login to save this score"
+                        : scoreSaveStatus
                 }}
 
                 onRestart={reset}

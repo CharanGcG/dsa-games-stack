@@ -6,6 +6,8 @@ import Stats from "../components/AlterStack/Stats";
 import ResultOverlay from "../components/ResultOverlay";
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { useAuth } from "../context/AuthContext";
+import { submitScore } from "../lib/api";
 
 
 const generateGameData = (difficulty = "easy") => {
@@ -53,6 +55,7 @@ const generateGameData = (difficulty = "easy") => {
 
 const AlterStack = () => {
   const appName = 'Alter Stack';
+  const { isLoggedIn, tokens } = useAuth();
 
   const rules = [
     "Starting the Game: Select difficulty, click on the Start button, timer starts.",
@@ -81,6 +84,8 @@ const AlterStack = () => {
     const [showResult, setShowResult] = useState(false);
     const [gameWon, setGameWon] = useState(false);
     const [lastAction, setLastAction] = useState(null);
+    const [savedScore, setSavedScore] = useState(null);
+    const [scoreSaveStatus, setScoreSaveStatus] = useState("idle");
 
 
     useEffect(()=>{
@@ -89,6 +94,45 @@ const AlterStack = () => {
             if (timerId) clearInterval(timerId);
         }
     }, []);
+
+    useEffect(() => {
+        if (!showResult) return;
+
+        if (!isLoggedIn) {
+            setScoreSaveStatus("login-required");
+            return;
+        }
+
+        if (scoreSaveStatus === "saving" || scoreSaveStatus === "saved") return;
+
+        const saveAttempt = async () => {
+            setScoreSaveStatus("saving");
+
+            try {
+                const data = await submitScore(tokens.accessToken, {
+                    gameSlug: "alter-stack",
+                    difficulty,
+                    stats: {
+                        target,
+                        finalSum: currentSum,
+                        pushes,
+                        pops,
+                        stackLength: stack.length,
+                        timeLeft,
+                    },
+                });
+
+                setSavedScore(data.score);
+                setScoreSaveStatus("saved");
+                toast.success("Score saved");
+            } catch (err) {
+                setScoreSaveStatus("failed");
+                toast.error(err.message);
+            }
+        };
+
+        saveAttempt();
+    }, [showResult, isLoggedIn, scoreSaveStatus, tokens, difficulty, target, currentSum, pushes, pops, stack.length, timeLeft]);
 
     const initializeGame = () => {
         if(timerId) clearInterval(timerId);
@@ -106,6 +150,8 @@ const AlterStack = () => {
         setTimeLeft(0);
         setGameWon(false);
         setShowResult(false);
+        setSavedScore(null);
+        setScoreSaveStatus("idle");
     };
     
     const handlePush = (value, index) => {
@@ -214,6 +260,8 @@ const AlterStack = () => {
         setTimeLeft(duration);
         setGameStarted(true);
         setDifficulty(selectedDifficulty);
+        setSavedScore(null);
+        setScoreSaveStatus("idle");
     
         if (timerId) clearInterval(timerId);
     
@@ -251,6 +299,8 @@ const AlterStack = () => {
         setTimeLeft(0);
         setGameWon(false);
         setShowResult(false);
+        setSavedScore(null);
+        setScoreSaveStatus("idle");
         gameEnded.current = false;
     };
     
@@ -268,13 +318,16 @@ const AlterStack = () => {
             win={gameWon}
             message={gameWon ? 'Congratulations! You Win!' : 'Popped Out! Try Again?'}
             stats={{
-              Score: gameWon ? evaluateScore() : '0',
+              Score: savedScore?.score ?? (gameWon ? evaluateScore() : '0'),
               "🎯 Target": target,
               "➕ Current Sum": currentSum,
               "📦 Pushes": pushes,
               "📤 Pops": pops,
               "📈 Difficulty": difficulty,
               "⏱️ Time Left": `${timeLeft} sec`,
+              "Save Status": scoreSaveStatus === "login-required"
+                ? "Login to save this score"
+                : scoreSaveStatus,
               
             }}
             

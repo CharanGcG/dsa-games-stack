@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import AuthStatus from './AuthStatus';
 import RulesModal from './RulesModal';
 
 const Header = ({appName, rules}) => {
@@ -22,7 +23,7 @@ const Header = ({appName, rules}) => {
           </div>
 
           {/* Right section with buttons */}
-          <div className="flex items-center gap-x-4">
+          <div className="flex items-center gap-x-2 sm:gap-x-4">
             <Link
               to="/"
               className="p-1 block border sm:border-none sm:bg-violet-800 sm:hover:bg-violet-950 text-white py-1 px-2 sm:py-3 sm:px-6 rounded-lg shadow-md text-center"
@@ -37,6 +38,7 @@ const Header = ({appName, rules}) => {
             >
               Rules
             </button>
+            <AuthStatus />
           </div>
 
         </div>
