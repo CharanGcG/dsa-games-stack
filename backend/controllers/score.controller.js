@@ -2,6 +2,7 @@ import Game from "../models/Game.js";
 import Score from "../models/Score.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { assertOneOf, requireFields } from "../middleware/validate.js";
+import { evaluateAchievementsForScore } from "../services/achievement.service.js";
 import { scoreGameAttempt } from "../services/scoring/index.js";
 import { httpError } from "../utils/httpError.js";
 
@@ -60,8 +61,12 @@ export const submitScore = asyncHandler(async (req, res) => {
   });
 
   await updateUserStats(req.user, score);
+  const unlockedAchievements = await evaluateAchievementsForScore({
+    user: req.user,
+    score,
+  });
 
-  res.status(201).json({ score });
+  res.status(201).json({ score, unlockedAchievements });
 });
 
 export const getMyScores = asyncHandler(async (req, res) => {

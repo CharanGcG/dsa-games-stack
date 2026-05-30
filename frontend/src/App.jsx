@@ -4,6 +4,7 @@ import AlterStack from "./pages/AlterStack";
 import Homepage from "./pages/HomePage";
 import QueueStacks from "./pages/QueueStacks";
 import BSTree from "./pages/BSTree";
+import ProgressPage from "./pages/ProgressPage";
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
         <Route path="/alter-stack" element={<AlterStack />} />
         <Route path="/queue-stacks" element={<QueueStacks/>} />
         <Route path='/bstree' element={<BSTree/>}/>
+        <Route path="/progress" element={<ProgressPage />} />
         {/* More routes to be added for further games */}
       </Routes>
     </Router>

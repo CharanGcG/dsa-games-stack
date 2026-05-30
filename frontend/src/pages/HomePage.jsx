@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import AuthStatus from '../components/AuthStatus';
+import LeaderboardPanel from '../components/LeaderboardPanel';
 import { getGames } from '../lib/api';
 
 
@@ -223,6 +224,8 @@ const Homepage = () => {
           </div>
         )})}
       </div>
+
+      <LeaderboardPanel gameSlug="alter-stack" difficulty="easy" />
 
       <Footer />
     </motion.div>

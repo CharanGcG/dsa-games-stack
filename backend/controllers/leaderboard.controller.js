@@ -73,3 +73,44 @@ export const getLeaderboard = asyncHandler(async (req, res) => {
     })),
   });
 });
+
+export const getMyLeaderboardRank = asyncHandler(async (req, res) => {
+  const gameSlug = req.params.gameSlug.toLowerCase();
+  const difficulty = req.params.difficulty?.toLowerCase();
+  const periodStart = getPeriodStart(req.query.period);
+
+  const match = { gameSlug };
+  if (difficulty) match.difficulty = difficulty;
+  if (periodStart) match.createdAt = { $gte: periodStart };
+
+  const rows = await Score.aggregate([
+    { $match: match },
+    { $sort: { score: -1, createdAt: 1 } },
+    {
+      $group: {
+        _id: "$user",
+        bestScore: { $first: "$$ROOT" },
+      },
+    },
+    { $replaceRoot: { newRoot: "$bestScore" } },
+    { $sort: { score: -1, createdAt: 1 } },
+    {
+      $project: {
+        user: 1,
+        score: 1,
+        difficulty: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
+  const rankIndex = rows.findIndex(
+    (row) => row.user.toString() === req.user._id.toString()
+  );
+
+  res.json({
+    rank: rankIndex === -1 ? null : rankIndex + 1,
+    totalRankedUsers: rows.length,
+    score: rankIndex === -1 ? null : rows[rankIndex],
+  });
+});

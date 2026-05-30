@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import achievementRoutes from "./routes/achievement.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import gameRoutes from "./routes/game.routes.js";
 import leaderboardRoutes from "./routes/leaderboard.routes.js";
@@ -32,6 +34,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/scores", scoreRoutes);
 app.use("/api/leaderboards", leaderboardRoutes);
+app.use("/api/achievements", achievementRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

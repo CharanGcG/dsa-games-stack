@@ -52,6 +52,16 @@ const userSchema = new mongoose.Schema(
       enum: ["player", "admin"],
       default: "player",
     },
+    totalXp: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    level: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
     preferredDifficulty: {
       type: String,
       enum: ["easy", "medium", "hard"],

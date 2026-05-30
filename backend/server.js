@@ -1,6 +1,7 @@
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { assertProductionEnv, env } from "./config/env.js";
+import { seedAchievements } from "./services/achievementSeed.service.js";
 import { seedGames } from "./services/gameSeed.service.js";
 
 const startServer = async () => {
@@ -9,7 +10,8 @@ const startServer = async () => {
   const connection = await connectDB();
   if (connection) {
     await seedGames();
-    console.log("Game registry seeded");
+    await seedAchievements();
+    console.log("Game registry and achievements seeded");
   }
 
   app.listen(env.port, () => {
