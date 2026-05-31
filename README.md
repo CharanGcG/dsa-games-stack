@@ -16,7 +16,7 @@ A gamified platform for learning Data Structures and Algorithms through interact
 - Backend: Node.js, Express, MongoDB, Mongoose
 - Auth: access tokens plus rotating refresh tokens
 - Database: MongoDB Atlas or local MongoDB
-- Deployment-ready options: Docker, Render/Railway/Fly, Vercel
+- Deployment-ready options: Docker, Render/Railway/Fly, Vercel, Github actions for Docker build
 
 ## Local Development
 
