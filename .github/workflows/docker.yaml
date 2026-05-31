@@ -19,6 +19,7 @@ jobs:
             image: dsa-games-backend
             context: ./backend
             dockerfile: ./backend/Dockerfile
+
           - service: frontend
             image: dsa-games-frontend
             context: ./frontend
@@ -43,11 +44,13 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
+
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:sha-${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:run-${{ github.run_number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:v${{ github.run_number }}
+
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
